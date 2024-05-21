@@ -1,18 +1,47 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div>
+    <input type="file" @change="readExcel" />
+    <apexchart type="bar" :options="chartOptions" :series="series"></apexchart>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from '@/components/HelloWorld.vue'
+import * as XLSX from 'xlsx';
 
 export default {
-  name: 'HomeView',
-  components: {
-    HelloWorld
+  data() {
+    return {
+      series: [],
+      chartOptions: {
+        chart: {
+          type: 'bar',
+        },
+        xaxis: {
+          categories: []
+        }
+      }
+    };
+  },
+  methods: {
+    readExcel(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+        this.processData(json);
+      };
+      reader.readAsBinaryString(file);
+    },
+    processData(data) {
+      const categories = data.map(item => item.Categoria);
+      const values = data.map(item => item.Valore);
+      this.series = [{ name: 'Valore', data: values }];
+      this.chartOptions.xaxis.categories = categories;
+    }
   }
-}
+};
 </script>

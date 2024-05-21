@@ -1,5 +1,9 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
+import Vue from 'vue';
+import App from './App.vue';
+import VueApexCharts from 'vue-apexcharts';
 
-createApp(App).use(router).mount('#app')
+Vue.component('apexchart', VueApexCharts);
+
+new Vue({
+  render: h => h(App),
+}).$mount('#app');
