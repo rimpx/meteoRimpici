@@ -1,6 +1,13 @@
 <template>
   <div id="chart">
-    <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
+    <apexchart
+      type="bar"
+      height="350"
+      :options="chartOptions"
+      :series="series"
+      v-if="series.length && chartOptions.xaxis.categories.length"
+    ></apexchart>
+    <div v-else>Loading data...</div>
   </div>
 </template>
 
@@ -18,11 +25,28 @@ export default {
       series: [],
       chartOptions: {
         chart: {
+          type: 'bar',
           height: 350,
-          type: 'line',
+        },
+        plotOptions: {
+          bar: {
+            borderRadius: 4,
+            horizontal: true,
+          }
+        },
+        dataLabels: {
+          enabled: false,
         },
         xaxis: {
-          categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
+          categories: [], // Sarà riempito con i comuni
+        },
+        title: {
+          text: 'Average Temperature in Various Cities',
+          floating: true,
+          align: 'center',
+          style: {
+            color: '#444'
+          }
         }
       }
     }
@@ -41,7 +65,15 @@ export default {
         const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
 
         const data = this.processWorksheet(worksheet)
-        this.series = this.formatData(data, 'Temp')
+        const seriesData = this.formatData(data, 'Temp')
+
+        // Controllo che i dati siano validi prima di impostarli
+        if (seriesData.length > 0) {
+          this.series = [{ name: 'Temperature', data: seriesData.map(item => item.data) }]
+          this.chartOptions.xaxis.categories = seriesData.map(item => item.name)
+        } else {
+          console.error("No valid data found for temperature.")
+        }
       } catch (error) {
         console.error("Error loading or processing Excel data:", error)
       }
@@ -67,6 +99,7 @@ export default {
         data: Object.keys(row)
           .filter(key => key.startsWith(type))
           .map(key => parseFloat(row[key]))
+          .reduce((a, b) => a + b, 0) / 16 // calcola la media delle temperature annuali
       }))
     }
   }
@@ -75,4 +108,3 @@ export default {
 
 <style scoped>
 </style>
-
