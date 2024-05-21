@@ -1,13 +1,16 @@
 <template>
-  <div id="chart">
-    <apexchart
-      type="bar"
-      height="350"
-      :options="chartOptions"
-      :series="series"
-      v-if="series.length && chartOptions.xaxis.categories.length"
-    ></apexchart>
-    <div v-else>Loading data...</div>
+  <div>
+    <h1>Precipitation Chart</h1>
+    <div id="chart">
+      <apexchart
+        type="line"
+        height="350"
+        :options="chartOptions"
+        :series="series"
+        v-if="series.length && chartOptions.xaxis.categories.length"
+      ></apexchart>
+      <div v-else>Loading data...</div>
+    </div>
   </div>
 </template>
 
@@ -26,70 +29,14 @@ export default {
       chartOptions: {
         chart: {
           height: 350,
-          type: 'bar',
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: 10,
-            dataLabels: {
-              position: 'top', // top, center, bottom
-            },
-          }
-        },
-        dataLabels: {
-          enabled: true,
-          formatter: function (val) {
-            return val + " mm";
-          },
-          offsetY: -20,
-          style: {
-            fontSize: '12px',
-            colors: ["#304758"]
-          }
+          type: 'line',
         },
         xaxis: {
-          categories: [], // Sarà riempito con i comuni
-          position: 'top',
-          axisBorder: {
-            show: false
-          },
-          axisTicks: {
-            show: false
-          },
-          crosshairs: {
-            fill: {
-              type: 'gradient',
-              gradient: {
-                colorFrom: '#D8E3F0',
-                colorTo: '#BED1E6',
-                stops: [0, 100],
-                opacityFrom: 0.4,
-                opacityTo: 0.5,
-              }
-            }
-          },
-          tooltip: {
-            enabled: true,
-          }
-        },
-        yaxis: {
-          axisBorder: {
-            show: false
-          },
-          axisTicks: {
-            show: false,
-          },
-          labels: {
-            show: false,
-            formatter: function (val) {
-              return val + " mm";
-            }
-          }
+          categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
         },
         title: {
           text: 'Precipitation in Various Cities',
           floating: true,
-          offsetY: 330,
           align: 'center',
           style: {
             color: '#444'
@@ -117,8 +64,8 @@ export default {
         console.log("Processed data:", seriesData); // Log di debug
 
         if (seriesData.length > 0) {
-          this.series = [{ name: 'Precipitation', data: seriesData.map(item => item.data) }]
-          this.chartOptions.xaxis.categories = seriesData.map(item => item.name)
+          this.series = seriesData
+          this.chartOptions.xaxis.categories = [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
         } else {
           console.error("No valid data found for precipitation.")
         }
@@ -127,8 +74,7 @@ export default {
       }
     },
     processWorksheet(worksheet) {
-      const columns = ['Comune'].concat(
-        worksheet[0].slice(1).map(year => `Prec_${year}`)
+      const columns = ['Comune'].concat(        worksheet[0].slice(1).map(year => `Prec_${year}`)
       )
 
       const data = worksheet.slice(1).map(row => {
@@ -161,5 +107,15 @@ export default {
 </script>
 
 <style scoped>
+#chart {
+  margin-top: 20px;
+}
+@media (max-width: 600px) {
+  #chart {
+    height: 300px;
+  }
+}
 </style>
+
+       
 

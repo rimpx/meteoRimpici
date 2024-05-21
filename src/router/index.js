@@ -1,7 +1,6 @@
-// router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import TemperatureChart from '@/views/TemperatureChart.vue'
-import PrecipitationChart from '@/views/PrecipitationChart.vue'
+import TemperatureChart from '../views/TemperatureChart.vue'
+import PrecipitationChart from '../views/PrecipitationChart.vue'
 
 const routes = [
   {
@@ -22,4 +21,3 @@ const router = createRouter({
 })
 
 export default router
-
