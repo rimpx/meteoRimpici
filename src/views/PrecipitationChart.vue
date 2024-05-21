@@ -114,7 +114,8 @@ export default {
         const data = this.processWorksheet(worksheet)
         const seriesData = this.formatData(data, 'Prec')
 
-        // Controllo che i dati siano validi prima di impostarli
+        console.log("Processed data:", seriesData); // Log di debug
+
         if (seriesData.length > 0) {
           this.series = [{ name: 'Precipitation', data: seriesData.map(item => item.data) }]
           this.chartOptions.xaxis.categories = seriesData.map(item => item.name)
@@ -141,13 +142,19 @@ export default {
       return data
     },
     formatData(data, type) {
-      return data.map(row => ({
-        name: row.Comune,
-        data: Object.keys(row)
+      return data.map(row => {
+        const values = Object.keys(row)
           .filter(key => key.startsWith(type))
           .map(key => parseFloat(row[key]))
-          .reduce((a, b) => a + b, 0) // somma le precipitazioni annuali
-      }))
+
+        const validValues = values.filter(value => !isNaN(value))
+        const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
+
+        return {
+          name: row.Comune,
+          data: values.map(value => isNaN(value) ? avgValue : value)
+        }
+      })
     }
   }
 }
@@ -155,3 +162,4 @@ export default {
 
 <style scoped>
 </style>
+

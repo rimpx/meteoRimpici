@@ -25,24 +25,26 @@ export default {
       series: [],
       chartOptions: {
         chart: {
-          type: 'bar',
           height: 350,
+          type: 'bar',
         },
         plotOptions: {
           bar: {
             borderRadius: 4,
+            borderRadiusApplication: 'end',
             horizontal: true,
           }
         },
         dataLabels: {
-          enabled: false,
+          enabled: false
         },
         xaxis: {
           categories: [], // Sarà riempito con i comuni
         },
         title: {
-          text: 'Average Temperature in Various Cities',
+          text: 'Average Temperature by City',
           floating: true,
+          offsetY: 330,
           align: 'center',
           style: {
             color: '#444'
@@ -67,7 +69,8 @@ export default {
         const data = this.processWorksheet(worksheet)
         const seriesData = this.formatData(data, 'Temp')
 
-        // Controllo che i dati siano validi prima di impostarli
+        console.log("Processed data:", seriesData); // Log di debug
+
         if (seriesData.length > 0) {
           this.series = [{ name: 'Temperature', data: seriesData.map(item => item.data) }]
           this.chartOptions.xaxis.categories = seriesData.map(item => item.name)
@@ -94,13 +97,19 @@ export default {
       return data
     },
     formatData(data, type) {
-      return data.map(row => ({
-        name: row.Comune,
-        data: Object.keys(row)
+      return data.map(row => {
+        const values = Object.keys(row)
           .filter(key => key.startsWith(type))
           .map(key => parseFloat(row[key]))
-          .reduce((a, b) => a + b, 0) / 16 // calcola la media delle temperature annuali
-      }))
+
+        const validValues = values.filter(value => !isNaN(value))
+        const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
+
+        return {
+          name: row.Comune,
+          data: values.map(value => isNaN(value) ? avgValue : value)
+        }
+      })
     }
   }
 }
