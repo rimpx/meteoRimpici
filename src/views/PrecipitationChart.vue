@@ -1,13 +1,20 @@
 <template>
-  <div>
-    <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
+  <div id="chart">
+    <apexchart
+      type="bar"
+      height="350"
+      :options="chartOptions"
+      :series="series"
+      v-if="series.length && chartOptions.xaxis.categories.length"
+    ></apexchart>
+    <div v-else>Loading data...</div>
   </div>
 </template>
 
 <script>
 import ApexCharts from 'vue3-apexcharts'
 import * as XLSX from 'xlsx'
-import excelFile from '../assets/Tavole-Dati-Meteoclimatici-Anno-2021.xlsx'
+import precipitationFile from '../assets/Precipitazioni.xlsx'
 
 export default {
   components: {
@@ -15,15 +22,80 @@ export default {
   },
   data() {
     return {
+      series: [],
       chartOptions: {
         chart: {
-          id: 'precipitation-chart'
+          height: 350,
+          type: 'bar',
+        },
+        plotOptions: {
+          bar: {
+            borderRadius: 10,
+            dataLabels: {
+              position: 'top', // top, center, bottom
+            },
+          }
+        },
+        dataLabels: {
+          enabled: true,
+          formatter: function (val) {
+            return val + " mm";
+          },
+          offsetY: -20,
+          style: {
+            fontSize: '12px',
+            colors: ["#304758"]
+          }
         },
         xaxis: {
-          categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
+          categories: [], // Sarà riempito con i comuni
+          position: 'top',
+          axisBorder: {
+            show: false
+          },
+          axisTicks: {
+            show: false
+          },
+          crosshairs: {
+            fill: {
+              type: 'gradient',
+              gradient: {
+                colorFrom: '#D8E3F0',
+                colorTo: '#BED1E6',
+                stops: [0, 100],
+                opacityFrom: 0.4,
+                opacityTo: 0.5,
+              }
+            }
+          },
+          tooltip: {
+            enabled: true,
+          }
+        },
+        yaxis: {
+          axisBorder: {
+            show: false
+          },
+          axisTicks: {
+            show: false,
+          },
+          labels: {
+            show: false,
+            formatter: function (val) {
+              return val + " mm";
+            }
+          }
+        },
+        title: {
+          text: 'Precipitation in Various Cities',
+          floating: true,
+          offsetY: 330,
+          align: 'center',
+          style: {
+            color: '#444'
+          }
         }
-      },
-      series: []
+      }
     }
   },
   mounted() {
@@ -31,23 +103,34 @@ export default {
   },
   methods: {
     async loadExcelData() {
-      const response = await fetch(excelFile)
-      const arrayBuffer = await response.arrayBuffer()
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      try {
+        const response = await fetch(precipitationFile)
+        const arrayBuffer = await response.arrayBuffer()
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
 
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
 
-      const data = this.processWorksheet(worksheet)
-      this.series = this.formatData(data, 'Prec')
+        const data = this.processWorksheet(worksheet)
+        const seriesData = this.formatData(data, 'Prec')
+
+        // Controllo che i dati siano validi prima di impostarli
+        if (seriesData.length > 0) {
+          this.series = [{ name: 'Precipitation', data: seriesData.map(item => item.data) }]
+          this.chartOptions.xaxis.categories = seriesData.map(item => item.name)
+        } else {
+          console.error("No valid data found for precipitation.")
+        }
+      } catch (error) {
+        console.error("Error loading or processing Excel data:", error)
+      }
     },
     processWorksheet(worksheet) {
       const columns = ['Comune'].concat(
-        worksheet[2].slice(1, 17).map(year => `Temp_${year}`),
-        worksheet[2].slice(18).map(year => `Prec_${year}`)
+        worksheet[0].slice(1).map(year => `Prec_${year}`)
       )
 
-      const data = worksheet.slice(3).map(row => {
+      const data = worksheet.slice(1).map(row => {
         const rowData = {}
         columns.forEach((col, i) => {
           rowData[col] = row[i]
@@ -58,18 +141,13 @@ export default {
       return data
     },
     formatData(data, type) {
-      const formattedData = []
-      data.forEach(row => {
-        const name = row.Comune
-        const values = Object.keys(row)
+      return data.map(row => ({
+        name: row.Comune,
+        data: Object.keys(row)
           .filter(key => key.startsWith(type))
           .map(key => parseFloat(row[key]))
-        formattedData.push({
-          name: name,
-          data: values
-        })
-      })
-      return formattedData
+          .reduce((a, b) => a + b, 0) // somma le precipitazioni annuali
+      }))
     }
   }
 }

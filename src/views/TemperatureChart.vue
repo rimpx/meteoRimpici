@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="chart">
     <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
   </div>
 </template>
@@ -7,7 +7,7 @@
 <script>
 import ApexCharts from 'vue3-apexcharts'
 import * as XLSX from 'xlsx'
-import excelFile from '../assets/Tavole-Dati-Meteoclimatici-Anno-2021.xlsx'
+import temperatureFile from '../assets/Temperature.xlsx'
 
 export default {
   components: {
@@ -15,15 +15,16 @@ export default {
   },
   data() {
     return {
+      series: [],
       chartOptions: {
         chart: {
-          id: 'temperature-chart'
+          height: 350,
+          type: 'line',
         },
         xaxis: {
-          categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
+          categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
         }
-      },
-      series: []
+      }
     }
   },
   mounted() {
@@ -31,23 +32,26 @@ export default {
   },
   methods: {
     async loadExcelData() {
-      const response = await fetch(excelFile)
-      const arrayBuffer = await response.arrayBuffer()
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      try {
+        const response = await fetch(temperatureFile)
+        const arrayBuffer = await response.arrayBuffer()
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
 
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
 
-      const data = this.processWorksheet(worksheet)
-      this.series = this.formatData(data, 'Temp')
+        const data = this.processWorksheet(worksheet)
+        this.series = this.formatData(data, 'Temp')
+      } catch (error) {
+        console.error("Error loading or processing Excel data:", error)
+      }
     },
     processWorksheet(worksheet) {
       const columns = ['Comune'].concat(
-        worksheet[2].slice(1, 17).map(year => `Temp_${year}`),
-        worksheet[2].slice(18).map(year => `Prec_${year}`)
+        worksheet[0].slice(1).map(year => `Temp_${year}`)
       )
 
-      const data = worksheet.slice(3).map(row => {
+      const data = worksheet.slice(1).map(row => {
         const rowData = {}
         columns.forEach((col, i) => {
           rowData[col] = row[i]
@@ -58,18 +62,12 @@ export default {
       return data
     },
     formatData(data, type) {
-      const formattedData = []
-      data.forEach(row => {
-        const name = row.Comune
-        const values = Object.keys(row)
+      return data.map(row => ({
+        name: row.Comune,
+        data: Object.keys(row)
           .filter(key => key.startsWith(type))
           .map(key => parseFloat(row[key]))
-        formattedData.push({
-          name: name,
-          data: values
-        })
-      })
-      return formattedData
+      }))
     }
   }
 }
@@ -77,3 +75,4 @@ export default {
 
 <style scoped>
 </style>
+
