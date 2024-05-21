@@ -1,12 +1,13 @@
 <template>
   <div>
-    <input type="file" @change="readExcel" />
     <apexchart type="bar" :options="chartOptions" :series="series"></apexchart>
   </div>
 </template>
 
 <script>
 import * as XLSX from 'xlsx';
+// Importa il file Excel direttamente
+import dataFile from '@/assets/Tavole-Dati-Meteoclimatici-Anno-2021.xlsx';
 
 export default {
   data() {
@@ -22,19 +23,17 @@ export default {
       }
     };
   },
+  mounted() {
+    this.readExcel();
+  },
   methods: {
-    readExcel(event) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-        this.processData(json);
-      };
-      reader.readAsBinaryString(file);
+    readExcel() {
+      // Legge e processa il file Excel direttamente
+      const workbook = XLSX.read(dataFile, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      this.processData(json);
     },
     processData(data) {
       const categories = data.map(item => item.Categoria);
@@ -45,3 +44,4 @@ export default {
   }
 };
 </script>
+
