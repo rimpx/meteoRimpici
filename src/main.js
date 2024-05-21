@@ -1,9 +1,10 @@
-import Vue from 'vue';
+import { createApp } from 'vue';
 import App from './App.vue';
-import VueApexCharts from 'vue-apexcharts';
+import VueApexCharts from '@apexcharts/vue3';
 
-Vue.component('apexchart', VueApexCharts);
+const app = createApp(App);
 
-new Vue({
-  render: h => h(App),
-}).$mount('#app');
+app.use(VueApexCharts);
+app.component('apex-chart', VueApexCharts);
+
+app.mount('#app');

@@ -1,12 +1,11 @@
 <template>
   <div>
-    <apexchart type="bar" :options="chartOptions" :series="series"></apexchart>
+    <apex-chart type="bar" :options="chartOptions" :series="series"></apex-chart>
   </div>
 </template>
 
 <script>
 import * as XLSX from 'xlsx';
-// Importa il file Excel direttamente
 import dataFile from '@/assets/Tavole-Dati-Meteoclimatici-Anno-2021.xlsx';
 
 export default {
@@ -28,7 +27,6 @@ export default {
   },
   methods: {
     readExcel() {
-      // Legge e processa il file Excel direttamente
       const workbook = XLSX.read(dataFile, { type: 'array' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
