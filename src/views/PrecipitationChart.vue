@@ -11,6 +11,23 @@
       ></apexchart>
       <div v-else>Loading data...</div>
     </div>
+    <h2>Data Table</h2>
+    <div id="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Comune</th>
+            <th v-for="year in chartOptions.xaxis.categories" :key="year">{{ year }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, index) in tableData" :key="index">
+            <td>{{ row.Comune }}</td>
+            <td v-for="year in chartOptions.xaxis.categories" :key="year">{{ row[`Prec_${year}`] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -26,6 +43,7 @@ export default {
   data() {
     return {
       series: [],
+      tableData: [],
       chartHeight: '350px',
       chartOptions: {
         chart: {
@@ -79,7 +97,8 @@ export default {
         const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
 
         const data = this.processWorksheet(worksheet)
-        const seriesData = this.formatData(data, 'Prec')
+        this.tableData = this.formatDataForTable(data)
+        const seriesData = this.formatDataForChart(data, 'Prec')
 
         console.log("Processed data:", seriesData); // Log di debug
 
@@ -108,19 +127,30 @@ export default {
 
       return data
     },
-    formatData(data, type) {
+    formatDataForChart(data, type) {
       return data.map(row => {
         const values = Object.keys(row)
           .filter(key => key.startsWith(type))
           .map(key => parseFloat(row[key]))
 
-        const validValues = values.filter(value => !isNaN(value))
+        const validValues = values.filter(value => !isNaN(value) && value > 1)
         const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
 
         return {
           name: row.Comune,
-          data: values.map(value => isNaN(value) ? avgValue : value).map(value => parseFloat(value.toFixed(2)))
+          data: values.map(value => (isNaN(value) || value <= 1) ? avgValue : value).map(value => parseFloat(value.toFixed(2)))
         }
+      })
+    },
+    formatDataForTable(data) {
+      return data.map(row => {
+        const formattedRow = { Comune: row.Comune }
+        Object.keys(row).forEach(key => {
+          if (key.startsWith('Prec_')) {
+            formattedRow[key] = isNaN(row[key]) || row[key] <= 1 ? '-' : parseFloat(row[key]).toFixed(2)
+          }
+        })
+        return formattedRow
       })
     },
     adjustChartSize() {
@@ -135,10 +165,34 @@ export default {
   margin-top: 20px;
   width: 100%;
 }
+#table-container {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+th {
+  background-color: #f2f2f2;
+}
 @media (max-width: 600px) {
   #chart {
     height: 300px;
   }
+  th, td {
+    padding: 4px;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+  }
 }
 </style>
-
