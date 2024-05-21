@@ -35,6 +35,20 @@ export default {
         xaxis: {
           categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
         },
+        yaxis: {
+          labels: {
+            formatter: function (val) {
+              return val.toFixed(2) + " °C";
+            }
+          }
+        },
+        tooltip: {
+          y: {
+            formatter: function (val) {
+              return val.toFixed(2) + " °C";
+            }
+          }
+        },
         title: {
           text: 'Average Temperature by City',
           floating: true,
@@ -105,7 +119,7 @@ export default {
 
         return {
           name: row.Comune,
-          data: values.map(value => isNaN(value) ? avgValue : value)
+          data: values.map(value => isNaN(value) ? avgValue : value).map(value => parseFloat(value.toFixed(2)))
         }
       })
     },
