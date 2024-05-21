@@ -4,7 +4,7 @@
     <div id="chart">
       <apexchart
         type="line"
-        height="350"
+        :height="chartHeight"
         :options="chartOptions"
         :series="series"
         v-if="series.length && chartOptions.xaxis.categories.length"
@@ -26,6 +26,7 @@ export default {
   data() {
     return {
       series: [],
+      chartHeight: '350px',
       chartOptions: {
         chart: {
           height: 350,
@@ -47,6 +48,11 @@ export default {
   },
   mounted() {
     this.loadExcelData()
+    this.adjustChartSize()
+    window.addEventListener('resize', this.adjustChartSize)
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.adjustChartSize)
   },
   methods: {
     async loadExcelData() {
@@ -102,6 +108,9 @@ export default {
           data: values.map(value => isNaN(value) ? avgValue : value)
         }
       })
+    },
+    adjustChartSize() {
+      this.chartHeight = window.innerWidth > 1200 ? '500px' : '350px'
     }
   }
 }
@@ -110,6 +119,7 @@ export default {
 <style scoped>
 #chart {
   margin-top: 20px;
+  width: 100%;
 }
 @media (max-width: 600px) {
   #chart {
