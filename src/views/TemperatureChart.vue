@@ -1,119 +1,141 @@
 <template>
-  <div id="chart">
-    <apexchart
-      type="bar"
-      height="350"
-      :options="chartOptions"
-      :series="series"
-      v-if="series.length && chartOptions.xaxis.categories.length"
-    ></apexchart>
-    <div v-else>Loading data...</div>
+  <div class="container">
+    <h1>TEMPERATURE</h1>
+
+    <!-- Temperature Chart -->
+    <div>
+      <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
+    </div>
+
+    <!-- Data Table -->
+    <table v-if="jsonData.length">
+      <thead>
+        <tr>
+          <th v-for="key in headers" :key="key" :class="{ 'text-left': key === 'Anno' || key === 'Città', 'text-right': key !== 'Anno' && key !== 'Città' }">{{ key }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(row, index) in jsonData.slice(0, 5)" :key="index">
+          <td v-for="(value, key) in row" :key="key" :class="{ 'text-left': key === 'Anno' || key === 'Città', 'text-right': key !== 'Anno' && key !== 'Città' }">
+            {{ value }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Information Card for the City -->
+    <div class="card" v-if="selectedCity">
+      <h2>{{ selectedCity }}</h2>
+      <!-- Additional city information here... -->
+      <button @click="closeCard">Chiudi</button>
+    </div>
   </div>
 </template>
 
 <script>
-import ApexCharts from 'vue3-apexcharts'
-import * as XLSX from 'xlsx'
-import temperatureFile from '../assets/Temperature.xlsx'
+import * as XLSX from 'xlsx';
+import VueApexCharts from 'vue3-apexcharts';
 
 export default {
+  name: 'HomeView',
   components: {
-    apexchart: ApexCharts,
+    apexchart: VueApexCharts
   },
   data() {
     return {
-      series: [],
+      jsonData: [],
+      headers: [],
       chartOptions: {
         chart: {
-          height: 350,
-          type: 'bar',
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: 4,
-            borderRadiusApplication: 'end',
-            horizontal: true,
-          }
-        },
-        dataLabels: {
-          enabled: false
+          id: 'temperature-chart'
         },
         xaxis: {
-          categories: [], // Sarà riempito con i comuni
+          categories: []
         },
-        title: {
-          text: 'Average Temperature by City',
-          floating: true,
-          offsetY: 330,
-          align: 'center',
-          style: {
-            color: '#444'
+        yaxis: {
+          title: {
+            text: 'Temperature (°C)'
           }
         }
-      }
-    }
+      },
+      series: [],
+      selectedCity: null
+    };
   },
   mounted() {
-    this.loadExcelData()
+    this.loadExcelFile();
   },
   methods: {
-    async loadExcelData() {
+    async loadExcelFile() {
       try {
-        const response = await fetch(temperatureFile)
-        const arrayBuffer = await response.arrayBuffer()
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+        const response = await fetch(new URL('@/assets/Temperature.xlsx', import.meta.url));
+        const arrayBuffer = await response.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        let json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+        this.headers = json[0];
+        json.shift(); // Remove the header row
 
-        const data = this.processWorksheet(worksheet)
-        const seriesData = this.formatData(data, 'Temp')
+        this.jsonData = json.map((row, index) => {
+          if (index < 5) { // Only process the first 5 rows
+            let obj = {};
+            this.headers.forEach((header, index) => {
+              obj[header] = row[index];
+            });
+            return obj;
+          }
+        }).filter(item => item !== undefined);
 
-        console.log("Processed data:", seriesData); // Log di debug
+        this.chartOptions.xaxis.categories = this.headers.slice(1); // Assuming first header is 'Città'
 
-        if (seriesData.length > 0) {
-          this.series = [{ name: 'Temperature', data: seriesData.map(item => item.data) }]
-          this.chartOptions.xaxis.categories = seriesData.map(item => item.name)
-        } else {
-          console.error("No valid data found for temperature.")
-        }
+        this.series = [{
+          name: 'Temperature',
+          data: this.jsonData.map(row => this.headers.slice(1).map(year => row[year]))
+        }];
+
       } catch (error) {
-        console.error("Error loading or processing Excel data:", error)
+        console.error('Error loading the Excel file:', error);
       }
-    },
-    processWorksheet(worksheet) {
-      const columns = ['Comune'].concat(
-        worksheet[0].slice(1).map(year => `Temp_${year}`)
-      )
-
-      const data = worksheet.slice(1).map(row => {
-        const rowData = {}
-        columns.forEach((col, i) => {
-          rowData[col] = row[i]
-        })
-        return rowData
-      })
-
-      return data
-    },
-    formatData(data, type) {
-      return data.map(row => {
-        const values = Object.keys(row)
-          .filter(key => key.startsWith(type))
-          .map(key => parseFloat(row[key]))
-
-        const validValues = values.filter(value => !isNaN(value))
-        const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
-
-        return {
-          name: row.Comune,
-          data: values.map(value => isNaN(value) ? avgValue : value)
-        }
-      })
     }
   }
-}
+};
 </script>
 
 <style scoped>
+.container {
+  margin: 0 5%;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid;
+  padding: 8px;
+}
+th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}
+.card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #ffffff;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 </style>
+

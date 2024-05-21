@@ -1,24 +1,27 @@
 <template>
   <div id="app">
-    <h1>Temperature Chart</h1>
-    <TemperatureChart />
-    <h1>Precipitation Chart</h1>
-    <PrecipitationChart />
+    <nav>
+      <router-link to="/">Temperature Chart</router-link> |
+      <router-link to="/precipitation">Precipitation Chart</router-link>
+    </nav>
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
-import TemperatureChart from './views/TemperatureChart.vue'
-import PrecipitationChart from './views/PrecipitationChart.vue'
-
 export default {
-  name: 'App',
-  components: {
-    TemperatureChart,
-    PrecipitationChart
-  }
+  name: 'App'
 }
 </script>
 
 <style>
+/* Optionally add some styles for navigation */
+nav a {
+  padding: 10px;
+  text-decoration: none;
+  color: blue;
+}
+nav a.router-link-exact-active {
+  color: red;
+}
 </style>

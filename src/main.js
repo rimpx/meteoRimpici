@@ -1,10 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import VueApexCharts from 'vue3-apexcharts'
+import router from './router' // Make sure the path is correct
 
 const app = createApp(App)
-
-// Usa il plugin VueApexCharts
-app.use(VueApexCharts)
-
+app.use(router)
 app.mount('#app')
