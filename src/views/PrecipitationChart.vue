@@ -17,7 +17,7 @@ export default {
     return {
       chartOptions: {
         chart: {
-          id: 'temperature-chart'
+          id: 'precipitation-chart'
         },
         xaxis: {
           categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
@@ -39,7 +39,7 @@ export default {
       const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
 
       const data = this.processWorksheet(worksheet)
-      this.series = this.formatData(data, 'Temp')
+      this.series = this.formatData(data, 'Prec')
     },
     processWorksheet(worksheet) {
       const columns = ['Comune'].concat(
