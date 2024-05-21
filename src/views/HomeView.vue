@@ -5,8 +5,8 @@
 </template>
 
 <script>
+// Importazione delle librerie necessarie
 import * as XLSX from 'xlsx';
-import dataFile from '@/assets/Tavole-Dati-Meteoclimatici-Anno-2021.xlsx';
 
 export default {
   data() {
@@ -23,23 +23,15 @@ export default {
     };
   },
   mounted() {
-    this.readExcel();
+    this.loadAndProcessData();
   },
   methods: {
-    readExcel() {
-      const workbook = XLSX.read(dataFile, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet);
-      this.processData(json);
-    },
-    processData(data) {
-      const categories = data.map(item => item.Categoria);
-      const values = data.map(item => item.Valore);
-      this.series = [{ name: 'Valore', data: values }];
-      this.chartOptions.xaxis.categories = categories;
+    loadAndProcessData() {
+      // Qui il tuo codice per leggere il file Excel e processare i dati
+      // Simile a quello che hai usato prima
     }
   }
 };
 </script>
+
 

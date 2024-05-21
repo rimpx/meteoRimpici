@@ -1,10 +1,10 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import VueApexCharts from '@apexcharts/vue3';
+import VueApexCharts from 'vue-apexcharts';
 
 const app = createApp(App);
 
-app.use(VueApexCharts);
+// Registra globalmente il componente di ApexCharts
 app.component('apex-chart', VueApexCharts);
 
 app.mount('#app');
