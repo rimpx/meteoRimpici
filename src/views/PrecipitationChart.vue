@@ -1,9 +1,16 @@
 <template>
-  <div>
+  <div class="container">
     <h1>Precipitation Chart</h1>
+    <div class="select-container">
+      <label for="year-select">Select Year: </label>
+      <select id="year-select" v-model="selectedYear" @change="updateChart">
+        <option value="all">All Years</option>
+        <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+      </select>
+    </div>
     <div id="chart">
       <apexchart
-        type="line"
+        type="bar"
         :height="chartHeight"
         :options="chartOptions"
         :series="series"
@@ -17,13 +24,13 @@
         <thead>
           <tr>
             <th>Comune</th>
-            <th v-for="year in chartOptions.xaxis.categories" :key="year">{{ year }}</th>
+            <th v-for="year in years" :key="year">{{ year }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(row, index) in tableData" :key="index">
             <td>{{ row.Comune }}</td>
-            <td v-for="year in chartOptions.xaxis.categories" :key="year">{{ row[`Prec_${year}`] }}</td>
+            <td v-for="year in years" :key="year">{{ row[`Prec_${year}`] }}</td>
           </tr>
         </tbody>
       </table>
@@ -44,21 +51,52 @@ export default {
     return {
       series: [],
       tableData: [],
-      chartHeight: '350px',
+      years: [],
+      selectedYear: '',
+      chartHeight: '500px',
       chartOptions: {
         chart: {
-          height: 350,
-          type: 'line',
+          height: 500,
+          type: 'bar',
+        },
+        plotOptions: {
+          bar: {
+            horizontal: false,
+            columnWidth: '55%',
+            endingShape: 'rounded'
+          },
+        },
+        dataLabels: {
+          enabled: false,
+        },
+        stroke: {
+          show: true,
+          width: 2,
+          colors: ['transparent'],
         },
         xaxis: {
-          categories: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
+          categories: [],
+          labels: {
+            rotate: -45,
+            maxHeight: 100,
+            style: {
+              fontSize: '12px'
+            }
+          }
         },
         yaxis: {
+          title: {
+            text: 'Precipitation (mm)'
+          },
           labels: {
             formatter: function (val) {
+              if (typeof val !== 'number') return val;
               return val.toFixed(2) + " mm";
             }
           }
+        },
+        fill: {
+          opacity: 1,
         },
         tooltip: {
           y: {
@@ -98,13 +136,14 @@ export default {
 
         const data = this.processWorksheet(worksheet)
         this.tableData = this.formatDataForTable(data)
-        const seriesData = this.formatDataForChart(data, 'Prec')
+        const categories = worksheet[0].slice(1) // Ottieni le categorie (anni) dal primo row del worksheet
 
-        console.log("Processed data:", seriesData); // Log di debug
+        console.log("Processed data:", data); // Log di debug
 
-        if (seriesData.length > 0) {
-          this.series = seriesData
-          this.chartOptions.xaxis.categories = [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
+        if (data.length > 0) {
+          this.years = categories
+          this.selectedYear = categories[categories.length - 1] // Imposta l'anno più recente come default
+          this.updateChartData(data, this.selectedYear)
         } else {
           console.error("No valid data found for precipitation.")
         }
@@ -127,20 +166,36 @@ export default {
 
       return data
     },
-    formatDataForChart(data, type) {
-      return data.map(row => {
-        const values = Object.keys(row)
-          .filter(key => key.startsWith(type))
-          .map(key => parseFloat(row[key]))
+    formatDataForChart(data, year) {
+      if (year === 'all') {
+        return this.years.map(year => {
+          return {
+            name: year,
+            data: data.map(row => {
+              const value = parseFloat(row[`Prec_${year}`])
+              const validValues = Object.keys(row)
+                .filter(key => key.startsWith('Prec') && !isNaN(parseFloat(row[key])) && parseFloat(row[key]) > 1)
+                .map(key => parseFloat(row[key]))
 
-        const validValues = values.filter(value => !isNaN(value) && value > 1)
-        const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
+              const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
+              return isNaN(value) || value <= 1 ? avgValue : value
+            }).map(value => parseFloat(value.toFixed(2)))
+          }
+        })
+      } else {
+        return data.map(row => {
+          const value = parseFloat(row[`Prec_${year}`])
+          const validValues = Object.keys(row)
+            .filter(key => key.startsWith('Prec') && !isNaN(parseFloat(row[key])) && parseFloat(row[key]) > 1)
+            .map(key => parseFloat(row[key]))
 
-        return {
-          name: row.Comune,
-          data: values.map(value => (isNaN(value) || value <= 1) ? avgValue : value).map(value => parseFloat(value.toFixed(2)))
-        }
-      })
+          const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
+          return {
+            name: row.Comune,
+            data: [isNaN(value) || value <= 1 ? avgValue : value].map(value => parseFloat(value.toFixed(2)))
+          }
+        })
+      }
     },
     formatDataForTable(data) {
       return data.map(row => {
@@ -153,34 +208,63 @@ export default {
         return formattedRow
       })
     },
+    updateChart() {
+      const data = this.tableData
+      this.updateChartData(data, this.selectedYear)
+    },
+    updateChartData(data, year) {
+      if (year === 'all') {
+        const seriesData = this.formatDataForChart(data, year)
+        this.series = seriesData
+        this.chartOptions.xaxis.categories = data.map(row => row.Comune)
+      } else {
+        const seriesData = this.formatDataForChart(data, year)
+        this.series = [{ data: seriesData.map(d => d.data[0]), name: `Precipitation in ${year}` }]
+        this.chartOptions.xaxis.categories = seriesData.map(d => d.name)
+      }
+    },
     adjustChartSize() {
-      this.chartHeight = window.innerWidth > 1200 ? '500px' : '350px'
+      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px'
     }
   }
 }
 </script>
 
 <style scoped>
+.container {
+  max-width: 100%;
+  padding: 20px;
+}
+
+.select-container {
+  margin-bottom: 20px;
+}
+
 #chart {
   margin-top: 20px;
   width: 100%;
 }
+
 #table-container {
   margin-top: 20px;
   overflow-x: auto;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
 }
+
 th, td {
   padding: 8px;
   text-align: center;
   border: 1px solid #ddd;
 }
+
 th {
   background-color: #f2f2f2;
 }
+
 @media (max-width: 600px) {
   #chart {
     height: 300px;
