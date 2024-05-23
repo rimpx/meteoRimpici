@@ -7,7 +7,7 @@
         <option value="all">All Years</option>
         <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
       </select>
-      <button @click="showTop5Cities" class="button">Show Top 5 Cities</button>
+      <button @click="showTop10Cities" class="button">Show Top 10 Cities</button>
       <button @click="showAllCities" class="button">Show All Cities</button>
     </div>
     <div id="chart">
@@ -30,7 +30,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, index) in tableData" :key="index" :class="{ highlighted: top5Cities.includes(row.Comune) }">
+          <tr v-for="(row, index) in tableData" :key="index" :class="{ highlighted: top10Cities.includes(row.Comune) }">
             <td>{{ row.Comune }}</td>
             <td v-for="year in years" :key="year">{{ row[`Temp_${year}`] }}</td>
           </tr>
@@ -56,7 +56,7 @@ export default {
       years: [],
       selectedYear: '',
       chartHeight: '500px',
-      top5Cities: [],
+      top10Cities: [],
       chartOptions: {
         chart: {
           height: 500,
@@ -224,20 +224,20 @@ export default {
         this.chartOptions.xaxis.categories = seriesData.map(d => d.name)
       }
     },
-    showTop5Cities() {
+    showTop10Cities() {
       const data = this.tableData.map(row => {
         return {
           Comune: row.Comune,
           value: parseFloat(row[`Temp_${this.selectedYear}`]) || 0
         }
-      }).sort((a, b) => b.value - a.value).slice(0, 5)
+      }).sort((a, b) => b.value - a.value).slice(0, 10)
 
-      this.top5Cities = data.map(row => row.Comune)
-      this.series = [{ data: data.map(row => row.value), name: `Top 5 Cities in ${this.selectedYear}` }]
-      this.chartOptions.xaxis.categories = data.map(row => row.Comune)
+      this.top10Cities = data.map(row => row.Comune)
+      this.series = [{ data: data.map(row => row.value), name: `Top 10 Cities in ${this.selectedYear}` }]
+      this.chartOptions.xaxis.categories = this.top10Cities
     },
     showAllCities() {
-      this.top5Cities = []
+      this.top10Cities = []
       this.updateChart()
     },
     adjustChartSize() {
@@ -279,7 +279,7 @@ export default {
 }
 
 .button:hover {
-  background-color: #e9e9e9;
+  background-color: #e9e9e9
 }
 
 #chart {
@@ -326,4 +326,3 @@ tr.highlighted {
   }
 }
 </style>
-
