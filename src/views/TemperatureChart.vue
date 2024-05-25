@@ -25,14 +25,33 @@
           <tr>
             <th>Comune</th>
             <th v-for="year in years" :key="year">{{ year }}</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(row, index) in tableData" :key="index">
             <td>{{ row.Comune }}</td>
-            <td v-for="year in years" :key="year">{{ row[`Temp_${year}`] }}</td>
+            <td v-for="year in years" :key="year">
+              <input type="number" v-model="row[`Temp_${year}`]" @change="updateTemperature(index, year, $event)" />
+            </td>
+            <td>
+              <button @click="deleteCity(index)">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td><input type="text" v-model="newCity" placeholder="New City" /></td>
+            <td v-for="year in years" :key="year">
+              <input type="number" v-model="newTemperatures[year]" placeholder="Temp" />
+            </td>
+            <td><button @click="addCity">Add</button></td>
           </tr>
         </tbody>
+        <tfoot>
+          <tr>
+            <td><input type="text" v-model="newYear" placeholder="New Year" /></td>
+            <td colspan="years.length + 1"><button @click="addYear">Add Year</button></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
@@ -53,6 +72,9 @@ export default {
       tableData: [],
       years: [],
       selectedYear: '',
+      newCity: '',
+      newTemperatures: {},
+      newYear: '',
       chartHeight: '500px',
       chartOptions: {
         chart: {
@@ -187,7 +209,8 @@ export default {
             .filter(key => key.startsWith('Temp') && !isNaN(parseFloat(row[key])))
             .map(key => parseFloat(row[key]))
 
-          const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
+          const avgValue = validValues.reduce((a, b) => a + b, 0) /
+          validValues.length
           return {
             name: row.Comune,
             data: [isNaN(value) ? avgValue : value].map(value => parseFloat(value.toFixed(2)))
@@ -221,8 +244,39 @@ export default {
         this.chartOptions.xaxis.categories = seriesData.map(d => d.name)
       }
     },
+    addCity() {
+      if (this.newCity && Object.keys(this.newTemperatures).length === this.years.length) {
+        const newRow = { Comune: this.newCity }
+        this.years.forEach(year => {
+          newRow[`Temp_${year}`] = this.newTemperatures[year] || '-'
+        })
+        this.tableData.push(newRow)
+        this.newCity = ''
+        this.newTemperatures = {}
+        this.updateChart()
+      }
+    },
+    addYear() {
+      if (this.newYear) {
+        this.years.push(this.newYear)
+        this.tableData.forEach(row => {
+          row[`Temp_${this.newYear}`] = '-'
+        })
+        this.newYear = ''
+        this.updateChart()
+      }
+    },
+    deleteCity(index) {
+      this.tableData.splice(index, 1)
+      this.updateChart()
+    },
+    updateTemperature(index, year, event) {
+      const newValue = event.target.value;
+      this.tableData[index][`Temp_${year}`] = parseFloat(newValue).toFixed(2);
+      this.updateChart();
+    },
     adjustChartSize() {
-      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px'
+      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px';
     }
   }
 }
@@ -248,6 +302,21 @@ export default {
   margin-right: 10px;
 }
 
+.button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover {
+  background-color: #e9e9e9;
+}
+
 #chart {
   margin-top: 20px;
   width: 100%;
@@ -271,6 +340,19 @@ th, td {
 
 th {
   background-color: #f2f2f2;
+}
+
+.form-container {
+  margin-top: 20px;
+}
+
+.form-container h3 {
+  margin-top: 0;
+}
+
+.form-container input {
+  margin-right: 10px;
+  padding: 5px;
 }
 
 @media (max-width: 600px) {
