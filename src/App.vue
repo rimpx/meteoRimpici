@@ -1,14 +1,11 @@
 <template>
   <div id="app">
     <nav>
-      <ul>
-        <li><router-link to="/">Temperature Chart</router-link></li>
-        <li><router-link to="/precipitation">Precipitation Chart</router-link></li>
-      </ul>
+      <router-link to="/temperature-chart">Temperature Chart</router-link>
+      <router-link to="/top10-cities">Top 10 Hottest Cities</router-link>
+      <router-link to="/precipitation-chart">Precipitation Chart</router-link>
     </nav>
-    <div class="content">
-      <router-view />
-    </div>
+    <router-view/>
   </div>
 </template>
 
@@ -18,69 +15,33 @@ export default {
 }
 </script>
 
-<style>
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f5f5f5;
-  margin: 0;
-  padding: 0;
+<style scoped>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
 }
+
 nav {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
-}
-nav ul {
-  list-style-type: none;
-  padding: 0;
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-nav li {
-  display: inline;
-}
-nav a {
-  text-decoration: none;
-  color: #42b983;
-  font-weight: bold;
-  padding: 10px 20px;
-  border: 2px solid #42b983;
-  border-radius: 5px;
-  transition: background-color 0.3s, color 0.3s;
-}
-nav a:hover {
-  background-color: #42b983;
-  color: white;
-}
-.content {
-  margin: 40px auto;
-  width: 90%;
-  max-width: 1200px;
-  background-color: white;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-}
-h1 {
-  text-align: center;
-  color: #333;
+  margin-bottom: 20px;
 }
 
-/* Media Queries for Responsive Design */
-@media (max-width: 600px) {
-  nav ul {
-    flex-direction: column;
-    align-items: center;
-  }
-  .content {
-    width: 100%;
-    margin: 20px auto;
-    padding: 10px;
-  }
-  nav a {
-    padding: 10px;
-    font-size: 14px;
-  }
+nav a {
+  margin: 0 15px;
+  padding: 10px 20px;
+  text-decoration: none;
+  color: #fff;
+  background-color: #007bff;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+  background-color: #0056b3;
 }
 </style>
