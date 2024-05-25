@@ -25,18 +25,38 @@
           <tr>
             <th>Comune</th>
             <th v-for="year in years" :key="year">{{ year }}</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(row, index) in tableData" :key="index">
             <td>{{ row.Comune }}</td>
-            <td v-for="year in years" :key="year">{{ row[`Prec_${year}`] }}</td>
+            <td v-for="year in years" :key="year">
+              <input type="number" v-model="row[`Prec_${year}`]" @change="updatePrecipitation(index, year, $event)" />
+            </td>
+            <td>
+              <button @click="deleteCity(index)">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td><input type="text" v-model="newCity" placeholder="New City" /></td>
+            <td v-for="year in years" :key="year">
+              <input type="number" v-model="newPrecipitations[year]" placeholder="Prec" />
+            </td>
+            <td><button @click="addCity">Add</button></td>
           </tr>
         </tbody>
+        <tfoot>
+          <tr>
+            <td><input type="text" v-model="newYear" placeholder="New Year" /></td>
+            <td colspan="years.length + 1"><button @click="addYear">Add Year</button></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
 </template>
+
 
 <script>
 import ApexCharts from 'vue3-apexcharts'
@@ -53,6 +73,9 @@ export default {
       tableData: [],
       years: [],
       selectedYear: '',
+      newCity: '',
+      newPrecipitations: {},
+      newYear: '',
       chartHeight: '500px',
       chartOptions: {
         chart: {
@@ -138,8 +161,6 @@ export default {
         this.tableData = this.formatDataForTable(data)
         const categories = worksheet[0].slice(1) // Ottieni le categorie (anni) dal primo row del worksheet
 
-        console.log("Processed data:", data); // Log di debug
-
         if (data.length > 0) {
           this.years = categories
           this.selectedYear = categories[categories.length - 1] // Imposta l'anno più recente come default
@@ -223,8 +244,39 @@ export default {
         this.chartOptions.xaxis.categories = seriesData.map(d => d.name)
       }
     },
+    addCity() {
+      if (this.newCity && Object.keys(this.newPrecipitations).length === this.years.length) {
+        const newRow = { Comune: this.newCity }
+        this.years.forEach(year => {
+          newRow[`Prec_${year}`] = this.newPrecipitations[year] || '-'
+        })
+        this.tableData.push(newRow)
+        this.newCity = ''
+        this.newPrecipitations = {}
+        this.updateChart()
+      }
+    },
+    addYear() {
+      if (this.newYear) {
+        this.years.push(this.newYear)
+        this.tableData.forEach(row => {
+          row[`Prec_${this.newYear}`] = '-'
+        })
+        this.newYear = ''
+        this.updateChart()
+      }
+    },
+    deleteCity(index) {
+      this.tableData.splice(index, 1)
+      this.updateChart()
+    },
+    updatePrecipitation(index, year, event) {
+      const newValue = event.target.value;
+      this.tableData[index][`Prec_${year}`] = parseFloat(newValue).toFixed(2);
+      this.updateChart();
+    },
     adjustChartSize() {
-      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px'
+      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px';
     }
   }
 }
@@ -237,7 +289,32 @@ export default {
 }
 
 .select-container {
+  display: flex;
+  align-items: center;
   margin-bottom: 20px;
+}
+
+.select-container label {
+  margin-right: 10px;
+}
+
+.select-container select {
+  margin-right: 10px;
+}
+
+.button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover {
+  background-color: #e9e9e9;
 }
 
 #chart {
@@ -263,6 +340,18 @@ th, td {
 
 th {
   background-color: #f2f2f2;
+}
+
+.form-container {
+  margin-top: 20px;
+}
+
+.form-container h3 {
+  margin-top: 0;
+}
+
+.form-container input {
+  margin-right: 10px;
 }
 
 @media (max-width: 600px) {
