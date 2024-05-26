@@ -168,6 +168,7 @@ export default {
         });
       });
 
+
       this.precips.forEach(datoCittà => {
         this.regioni.forEach(regione => {
           regione.città.forEach(città => {
@@ -182,7 +183,7 @@ export default {
       this.mostraPrecipitazioni(this.regioni);
     },
     calculateAverage(data) {
-      return data.length ? (data.reduce((a, b) => a + b, 0) / data.length).toFixed(2) : 0;
+      return data.length ?  data.reduce((a, b) => Number(a) + Number(b), 0) / data.length : 0;
     },
     mostraTemperatureData(data) {
       if (data.length > 1) {
