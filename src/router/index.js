@@ -1,34 +1,20 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import TemperatureChart from '../views/TemperatureChart.vue'
-import PrecipitationChart from '../views/PrecipitationChart.vue'
-import Top10Cities from '../views/Top10Cities.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import TemperatureChart from '../views/TemperatureChart.vue';
+import Top10Cities from '../views/Top10Cities.vue';
+import PrecipitationChart from '../views/PrecipitationChart.vue';
+import ItalianRegionChart from '../views/ItalianRegionChart.vue';
 
 const routes = [
-  {
-    path: '/',
-    name: 'TemperatureChart',
-    component: TemperatureChart
-  },
-  {
-    path: '/temperature-chart',
-    name: 'TemperatureChart',
-    component: TemperatureChart
-  },
-  {
-    path: '/precipitation-chart',
-    name: 'PrecipitationChart',
-    component: PrecipitationChart
-  },
-  {
-    path: '/top10-cities',
-    name: 'Top10Cities',
-    component: Top10Cities
-  }
-]
+  { path: '/', redirect: '/temperature-chart' },
+  { path: '/temperature-chart', component: TemperatureChart },
+  { path: '/top10-cities', component: Top10Cities },
+  { path: '/precipitation-chart', component: PrecipitationChart },
+  { path: '/italian-region-chart', component: ItalianRegionChart }
+];
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes
-})
+  history: createWebHistory(),
+  routes,
+});
 
-export default router
+export default router;

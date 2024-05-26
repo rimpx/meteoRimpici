@@ -4,6 +4,7 @@
       <router-link to="/temperature-chart">Temperature Chart</router-link>
       <router-link to="/top10-cities">Top 10 Hottest Cities</router-link>
       <router-link to="/precipitation-chart">Precipitation Chart</router-link>
+      <router-link to="/italian-region-chart">Italian Region Chart</router-link>
     </nav>
     <router-view/>
   </div>

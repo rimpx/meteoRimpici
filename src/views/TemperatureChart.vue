@@ -49,7 +49,7 @@
         <tfoot>
           <tr>
             <td><input type="text" v-model="newYear" placeholder="New Year" /></td>
-            <td colspan="years.length + 1"><button @click="addYear">Add Year</button></td>
+            <td :colspan="years.length + 1"><button @click="addYear">Add Year</button></td>
           </tr>
         </tfoot>
       </table>
@@ -58,9 +58,9 @@
 </template>
 
 <script>
-import ApexCharts from 'vue3-apexcharts'
-import * as XLSX from 'xlsx'
-import temperatureFile from '../assets/Temperature.xlsx'
+import ApexCharts from 'vue3-apexcharts';
+import * as XLSX from 'xlsx';
+import temperatureFile from '../assets/Temperature.xlsx';
 
 export default {
   components: {
@@ -85,7 +85,7 @@ export default {
           bar: {
             horizontal: false,
             columnWidth: '55%',
-            endingShape: 'rounded'
+            endingShape: 'rounded',
           },
         },
         dataLabels: {
@@ -102,20 +102,20 @@ export default {
             rotate: -45,
             maxHeight: 100,
             style: {
-              fontSize: '12px'
-            }
-          }
+              fontSize: '12px',
+            },
+          },
         },
         yaxis: {
           title: {
-            text: 'Temperature (°C)'
+            text: 'Temperature (°C)',
           },
           labels: {
             formatter: function (val) {
               if (typeof val !== 'number') return val;
-              return val.toFixed(2) + " °C";
-            }
-          }
+              return val.toFixed(2) + ' °C';
+            },
+          },
         },
         fill: {
           opacity: 1,
@@ -123,163 +123,165 @@ export default {
         tooltip: {
           y: {
             formatter: function (val) {
-              return val.toFixed(2) + " °C";
-            }
-          }
+              return val.toFixed(2) + ' °C';
+            },
+          },
         },
         title: {
           text: 'Average Temperature by City',
           floating: true,
           align: 'center',
           style: {
-            color: '#444'
-          }
-        }
-      }
-    }
+            color: '#444',
+          },
+        },
+      },
+    };
   },
   mounted() {
-    this.loadExcelData()
-    this.adjustChartSize()
-    window.addEventListener('resize', this.adjustChartSize)
+    this.loadFromLocalStorage();
+    this.loadExcelData();
+    this.adjustChartSize();
+    window.addEventListener('resize', this.adjustChartSize);
   },
   beforeUnmount() {
-    window.removeEventListener('resize', this.adjustChartSize)
+    window.removeEventListener('resize', this.adjustChartSize);
   },
   methods: {
     async loadExcelData() {
       try {
-        const response = await fetch(temperatureFile)
-        const arrayBuffer = await response.arrayBuffer()
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+        const response = await fetch(temperatureFile);
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
 
-        const data = this.processWorksheet(worksheet)
-        this.tableData = this.formatDataForTable(data)
-        const categories = worksheet[0].slice(1) // Ottieni le categorie (anni) dal primo row del worksheet
+        const data = this.processWorksheet(worksheet);
+        const categories = worksheet[0].slice(1); // Get the categories (years) from the first row of the worksheet
 
         if (data.length > 0) {
-          this.years = categories
-          this.selectedYear = categories[categories.length - 1] // Imposta l'anno più recente come default
-          this.updateChartData(data, this.selectedYear)
+          this.years = categories;
+          this.selectedYear = categories[categories.length - 1]; // Set the most recent year as default
+          this.updateChartData(data, this.selectedYear);
+          this.tableData = this.formatDataForTable(data);
+          this.saveToLocalStorage(); // Save initial load to local storage
         } else {
-          console.error("No valid data found for temperature.")
+          console.error('No valid data found for temperature.');
         }
       } catch (error) {
-        console.error("Error loading or processing Excel data:", error)
+        console.error('Error loading or processing Excel data:', error);
       }
     },
     processWorksheet(worksheet) {
       const columns = ['Comune'].concat(
-        worksheet[0].slice(1).map(year => `Temp_${year}`)
-      )
+        worksheet[0].slice(1).map((year) => `Temp_${year}`)
+      );
 
-      const data = worksheet.slice(1).map(row => {
-        const rowData = {}
+      const data = worksheet.slice(1).map((row) => {
+        const rowData = {};
         columns.forEach((col, i) => {
-          rowData[col] = row[i]
-        })
-        return rowData
-      })
+          rowData[col] = row[i];
+        });
+        return rowData;
+      });
 
-      return data
+      return data;
+    },
+    formatDataForTable(data) {
+      return data.map((row) => {
+        const formattedRow = { Comune: row.Comune };
+        Object.keys(row).forEach((key) => {
+          if (key.startsWith('Temp_')) {
+            formattedRow[key] = isNaN(row[key]) ? '-' : parseFloat(row[key]).toFixed(2);
+          }
+        });
+        return formattedRow;
+      });
+    },
+    updateChart() {
+      this.updateChartData(this.tableData, this.selectedYear);
+    },
+    updateChartData(data, year) {
+      const seriesData = this.formatDataForChart(data, year);
+      this.series = [{ data: seriesData.map((d) => d.data[0]), name: `Temperature in ${year}` }];
+      this.chartOptions.xaxis.categories = seriesData.map((d) => d.name);
+      this.saveToLocalStorage();
     },
     formatDataForChart(data, year) {
       if (year === 'all') {
-        return this.years.map(year => {
+        return this.years.map((yr) => {
           return {
-            name: year,
-            data: data.map(row => {
-              const value = parseFloat(row[`Temp_${year}`])
-              const validValues = Object.keys(row)
-                .filter(key => key.startsWith('Temp') && !isNaN(parseFloat(row[key])))
-                .map(key => parseFloat(row[key]))
-
-              const avgValue = validValues.reduce((a, b) => a + b, 0) / validValues.length
-              return isNaN(value) ? avgValue : value
-            }).map(value => parseFloat(value.toFixed(2)))
-          }
-        })
+            name: yr,
+            data: data.map((row) => parseFloat(row[`Temp_${yr}`] || 0).toFixed(2)),
+          };
+        });
       } else {
-        return data.map(row => {
-          const value = parseFloat(row[`Temp_${year}`])
-          const validValues = Object.keys(row)
-            .filter(key => key.startsWith('Temp') && !isNaN(parseFloat(row[key])))
-            .map(key => parseFloat(row[key]))
-
-          const avgValue = validValues.reduce((a, b) => a + b, 0) /
-          validValues.length
-          return {
+        return data
+          .filter((row) => row[`Temp_${year}`] !== undefined)
+          .map((row) => ({
             name: row.Comune,
-            data: [isNaN(value) ? avgValue : value].map(value => parseFloat(value.toFixed(2)))
-          }
-        })
-      }
-    },
-    formatDataForTable(data) {
-      return data.map(row => {
-        const formattedRow = { Comune: row.Comune }
-        Object.keys(row).forEach(key => {
-          if (key.startsWith('Temp_')) {
-            formattedRow[key] = isNaN(row[key]) ? '-' : parseFloat(row[key]).toFixed(2)
-          }
-        })
-        return formattedRow
-      })
-    },
-    updateChart() {
-      const data = this.tableData
-      this.updateChartData(data, this.selectedYear)
-    },
-    updateChartData(data, year) {
-      if (year === 'all') {
-        const seriesData = this.formatDataForChart(data, year)
-        this.series = seriesData
-        this.chartOptions.xaxis.categories = data.map(row => row.Comune)
-      } else {
-        const seriesData = this.formatDataForChart(data, year)
-        this.series = [{ data: seriesData.map(d => d.data[0]), name: `Temperature in ${year}` }]
-        this.chartOptions.xaxis.categories = seriesData.map(d => d.name)
+            data: [parseFloat(row[`Temp_${year}`] || 0).toFixed(2)],
+          }));
       }
     },
     addCity() {
       if (this.newCity && Object.keys(this.newTemperatures).length === this.years.length) {
-        const newRow = { Comune: this.newCity }
-        this.years.forEach(year => {
-          newRow[`Temp_${year}`] = this.newTemperatures[year] || '-'
-        })
-        this.tableData.push(newRow)
-        this.newCity = ''
-        this.newTemperatures = {}
-        this.updateChart()
+        const newRow = { Comune: this.newCity };
+        this.years.forEach((year) => {
+          newRow[`Temp_${year}`] = this.newTemperatures[year] || '-';
+        });
+        this.tableData.push(newRow);
+        this.newCity = '';
+        this.newTemperatures = {};
+        this.updateChart();
+        this.saveToLocalStorage();
       }
     },
     addYear() {
       if (this.newYear) {
-        this.years.push(this.newYear)
-        this.tableData.forEach(row => {
-          row[`Temp_${this.newYear}`] = '-'
-        })
-        this.newYear = ''
-        this.updateChart()
+        this.years.push(this.newYear);
+        this.tableData.forEach((row) => {
+          row[`Temp_${this.newYear}`] = '-';
+        });
+        this.newYear = '';
+        this.updateChart();
+        this.saveToLocalStorage();
       }
     },
     deleteCity(index) {
-      this.tableData.splice(index, 1)
-      this.updateChart()
+      this.tableData.splice(index, 1);
+      this.updateChart();
+      this.saveToLocalStorage();
     },
     updateTemperature(index, year, event) {
       const newValue = event.target.value;
       this.tableData[index][`Temp_${year}`] = parseFloat(newValue).toFixed(2);
       this.updateChart();
+      this.saveToLocalStorage();
     },
     adjustChartSize() {
       this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px';
+    },
+    saveToLocalStorage() {
+      const dataToStore = {
+        tableData: this.tableData,
+        years: this.years
+      };
+      localStorage.setItem('temperatureData', JSON.stringify(dataToStore));
+    },
+    loadFromLocalStorage() {
+      const storedData = localStorage.getItem('temperatureData');
+      if (storedData) {
+        const { tableData, years } = JSON.parse(storedData);
+        this.tableData = tableData;
+        this.years = years;
+        this.selectedYear = years[years.length - 1];
+        this.updateChart();
+      }
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -352,7 +354,6 @@ th {
 
 .form-container input {
   margin-right: 10px;
-  padding: 5px;
 }
 
 @media (max-width: 600px) {
