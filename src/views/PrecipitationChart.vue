@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1>Temperature Chart</h1>
+    <h1>Precipitation Chart</h1>
     <div class="select-container">
       <label for="year-select">Select Year: </label>
       <select id="year-select" v-model="selectedYear" @change="updateChart">
@@ -32,7 +32,7 @@
           <tr v-for="(row, index) in tableData" :key="index">
             <td>{{ row.Comune }}</td>
             <td v-for="year in years" :key="year">
-              <input type="number" v-model="row[`Temp_${year}`]" @change="updateTemperature(index, year, $event)" />
+              <input type="number" v-model="row[`Prec_${year}`]" @change="updatePrecipitation(index, year, $event)" />
             </td>
             <td>
               <button @click="deleteCity(index)">Delete</button>
@@ -41,7 +41,7 @@
           <tr>
             <td><input type="text" v-model="newCity" placeholder="New City" /></td>
             <td v-for="year in years" :key="year">
-              <input type="number" v-model="newTemperatures[year]" placeholder="Temp" />
+              <input type="number" v-model="newPrecipitations[year]" placeholder="Prec" />
             </td>
             <td><button @click="addCity">Add</button></td>
           </tr>
@@ -60,7 +60,7 @@
 <script>
 import ApexCharts from 'vue3-apexcharts';
 import * as XLSX from 'xlsx';
-import temperatureFile from '../assets/Temperature.xlsx';
+import precipitationFile from '../assets/Precipitazioni.xlsx';
 
 export default {
   components: {
@@ -73,7 +73,7 @@ export default {
       years: [],
       selectedYear: '',
       newCity: '',
-      newTemperatures: {},
+      newPrecipitations: {},
       newYear: '',
       chartHeight: '500px',
       chartOptions: {
@@ -108,12 +108,12 @@ export default {
         },
         yaxis: {
           title: {
-            text: 'Temperature (°C)',
+            text: 'Precipitation (mm)',
           },
           labels: {
             formatter: function (val) {
               if (typeof val !== 'number') return val;
-              return val.toFixed(2) + ' °C';
+              return val.toFixed(2) + ' mm';
             },
           },
         },
@@ -123,12 +123,12 @@ export default {
         tooltip: {
           y: {
             formatter: function (val) {
-              return val.toFixed(2) + ' °C';
+              return val.toFixed(2) + ' mm';
             },
           },
         },
         title: {
-          text: 'Average Temperature by City',
+          text: 'Average Precipitation by City',
           floating: true,
           align: 'center',
           style: {
@@ -150,7 +150,7 @@ export default {
   methods: {
     async loadExcelData() {
       try {
-        const response = await fetch(temperatureFile);
+        const response = await fetch(precipitationFile);
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
@@ -165,9 +165,10 @@ export default {
           this.selectedYear = categories[categories.length - 1]; // Set the most recent year as default
           this.updateChartData(data, this.selectedYear);
           this.tableData = this.formatDataForTable(data);
+          this.fillMissingData();
           this.saveToLocalStorage(); // Save initial load to local storage
         } else {
-          console.error('No valid data found for temperature.');
+          console.error('No valid data found for precipitation.');
         }
       } catch (error) {
         console.error('Error loading or processing Excel data:', error);
@@ -175,7 +176,7 @@ export default {
     },
     processWorksheet(worksheet) {
       const columns = ['Comune'].concat(
-        worksheet[0].slice(1).map((year) => `Temp_${year}`)
+        worksheet[0].slice(1).map((year) => `Prec_${year}`)
       );
 
       const data = worksheet.slice(1).map((row) => {
@@ -192,11 +193,28 @@ export default {
       return data.map((row) => {
         const formattedRow = { Comune: row.Comune };
         Object.keys(row).forEach((key) => {
-          if (key.startsWith('Temp_')) {
+          if (key.startsWith('Prec_')) {
             formattedRow[key] = isNaN(row[key]) ? '-' : parseFloat(row[key]).toFixed(2);
           }
         });
         return formattedRow;
+      });
+    },
+    fillMissingData() {
+      this.tableData.forEach(row => {
+        this.years.forEach((year, index) => {
+          if (row[`Prec_${year}`] === '-') {
+            const previousYears = this.years.slice(Math.max(0, index - 3), index);
+            const validValues = previousYears
+              .map(prevYear => parseFloat(row[`Prec_${prevYear}`]))
+              .filter(val => !isNaN(val));
+
+            if (validValues.length > 0) {
+              const averageValue = validValues.reduce((a, b) => a + b, 0) / validValues.length;
+              row[`Prec_${year}`] = averageValue.toFixed(2);
+            }
+          }
+        });
       });
     },
     updateChart() {
@@ -204,7 +222,7 @@ export default {
     },
     updateChartData(data, year) {
       const seriesData = this.formatDataForChart(data, year);
-      this.series = [{ data: seriesData.map((d) => d.data[0]), name: `Temperature in ${year}` }];
+      this.series = [{ data: seriesData.map((d) => d.data[0]), name: `Precipitation in ${year}` }];
       this.chartOptions.xaxis.categories = seriesData.map((d) => d.name);
       this.saveToLocalStorage();
     },
@@ -213,27 +231,27 @@ export default {
         return this.years.map((yr) => {
           return {
             name: yr,
-            data: data.map((row) => parseFloat(row[`Temp_${yr}`] || 0).toFixed(2)),
+            data: data.map((row) => parseFloat(row[`Prec_${yr}`] || 0).toFixed(2)),
           };
         });
       } else {
         return data
-          .filter((row) => row[`Temp_${year}`] !== undefined)
+          .filter((row) => row[`Prec_${year}`] !== undefined)
           .map((row) => ({
             name: row.Comune,
-            data: [parseFloat(row[`Temp_${year}`] || 0).toFixed(2)],
+            data: [parseFloat(row[`Prec_${year}`] || 0).toFixed(2)],
           }));
       }
     },
     addCity() {
-      if (this.newCity && Object.keys(this.newTemperatures).length === this.years.length) {
+      if (this.newCity && Object.keys(this.newPrecipitations).length === this.years.length) {
         const newRow = { Comune: this.newCity };
         this.years.forEach((year) => {
-          newRow[`Temp_${year}`] = this.newTemperatures[year] || '-';
+          newRow[`Prec_${year}`] = this.newPrecipitations[year] || '-';
         });
         this.tableData.push(newRow);
         this.newCity = '';
-        this.newTemperatures = {};
+        this.newPrecipitations = {};
         this.updateChart();
         this.saveToLocalStorage();
       }
@@ -242,10 +260,11 @@ export default {
       if (this.newYear) {
         this.years.push(this.newYear);
         this.tableData.forEach((row) => {
-          row[`Temp_${this.newYear}`] = '-';
+          row[`Prec_${this.newYear}`] = '-';
         });
         this.newYear = '';
         this.updateChart();
+        this.fillMissingData();
         this.saveToLocalStorage();
       }
     },
@@ -254,9 +273,9 @@ export default {
       this.updateChart();
       this.saveToLocalStorage();
     },
-    updateTemperature(index, year, event) {
+    updatePrecipitation(index, year, event) {
       const newValue = event.target.value;
-      this.tableData[index][`Temp_${year}`] = parseFloat(newValue).toFixed(2);
+      this.tableData[index][`Prec_${year}`] = parseFloat(newValue).toFixed(2);
       this.updateChart();
       this.saveToLocalStorage();
     },
@@ -266,18 +285,17 @@ export default {
     saveToLocalStorage() {
       const dataToStore = {
         tableData: this.tableData,
-        years: this.years,
-        selectedYear: this.selectedYear
+        years: this.years
       };
-      localStorage.setItem('temperatureData', JSON.stringify(dataToStore));
+      localStorage.setItem('precipitationData', JSON.stringify(dataToStore));
     },
     loadFromLocalStorage() {
-      const storedData = localStorage.getItem('temperatureData');
+      const storedData = localStorage.getItem('precipitationData');
       if (storedData) {
-        const { tableData, years, selectedYear } = JSON.parse(storedData);
+        const { tableData, years } = JSON.parse(storedData);
         this.tableData = tableData;
         this.years = years;
-        this.selectedYear = selectedYear;
+        this.selectedYear = years[years.length - 1];
         this.updateChart();
       }
     }
@@ -355,6 +373,7 @@ th {
 
 .form-container input {
   margin-right: 10px;
+  padding: 5px;
 }
 
 @media (max-width: 600px) {
@@ -372,3 +391,4 @@ th {
   }
 }
 </style>
+
