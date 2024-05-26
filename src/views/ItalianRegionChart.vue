@@ -16,21 +16,41 @@
         </tbody>
       </table>
   
-      <!-- Bar Chart for Top 10 Temperatures -->
+      <!-- Bar Chart for Temperatures -->
       <apexchart type="bar" :options="chartOptions" :series="chartSeries" height="350"></apexchart>
+  
+      <h3>Precipitazioni Per Regione</h3>
+      <table v-if="regioni.length">
+        <thead>
+          <tr>
+            <th>Regione</th>
+            <th>Precipitazioni Medie</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, index) in regioni" :key="index">
+            <td>{{ item.regione }}</td>
+            <td>{{ calculateAverage(item.precips) }}</td>
+          </tr>
+        </tbody>
+      </table>
+  
+      <!-- Bar Chart for Precipitations -->
+      <apexchart type="bar" :options="precChartOptions" :series="precChartSeries" height="350"></apexchart>
     </div>
   </template>
   <script>
   import VueApexCharts from 'vue3-apexcharts';
   
   export default {
-    name: 'TemperatureByRegion',
+    name: 'ClassificaView',
     components: {
       apexchart: VueApexCharts
     },
     data() {
       return {
         temps: [],
+        precips: [],
         chartOptions: {
           chart: {
             height: 350,
@@ -55,6 +75,32 @@
         },
         chartSeries: [{
           name: 'Temperatura Media',
+          data: []
+        }],
+        precChartOptions: {
+          chart: {
+            height: 350,
+            type: 'bar'
+          },
+          plotOptions: {
+            bar: {
+              horizontal: false
+            }
+          },
+          dataLabels: {
+            enabled: false
+          },
+          xaxis: {
+            categories: []
+          },
+          yaxis: {
+            title: {
+              text: 'Precipitazioni'
+            }
+          }
+        },
+        precChartSeries: [{
+          name: 'Precipitazioni',
           data: []
         }],
         jsonRegioni: {
@@ -89,11 +135,12 @@
     methods: {
       initializeRegions() {
         for (const region in this.jsonRegioni) {
-          this.regioni.push({ regione: region, temps: [] });
+          this.regioni.push({ regione: region, temps: [], precips: [] });
         }
       },
       loadData() {
         const storedTemps = JSON.parse(localStorage.getItem('temperatureData') || '[]');
+        const storedPrecs = JSON.parse(localStorage.getItem('precipitationData') || '[]');
   
         if (Array.isArray(storedTemps)) {
           storedTemps.forEach(datiCittà => {
@@ -108,20 +155,42 @@
               }
             });
           });
-  
-          this.updateChartAndTable();
         } else {
           console.error('Temperature data is not an array:', storedTemps);
         }
+  
+        if (Array.isArray(storedPrecs)) {
+          storedPrecs.forEach(datiCittà => {
+            const comune = datiCittà.Comune;
+            const precData = Object.keys(datiCittà)
+              .filter(key => key.startsWith('Prec_'))
+              .map(key => parseFloat(datiCittà[key]));
+  
+            this.regioni.forEach(region => {
+              if (this.jsonRegioni[region.regione].includes(comune)) {
+                region.precips.push(...precData);
+              }
+            });
+          });
+        } else {
+          console.error('Precipitation data is not an array:', storedPrecs);
+        }
+  
+        this.updateChartAndTable();
+        this.updatePrecipitationChartAndTable();
       },
-      calculateAverage(temps) {
-        if (temps.length === 0) return '-';
-        const sum = temps.reduce((a, b) => a + b, 0);
-        return (sum / temps.length).toFixed(2);
+      calculateAverage(values) {
+        if (values.length === 0) return '-';
+        const sum = values.reduce((a, b) => a + b, 0);
+        return (sum / values.length).toFixed(2);
       },
       updateChartAndTable() {
         this.chartOptions.xaxis.categories = this.regioni.map(item => item.regione);
         this.chartSeries[0].data = this.regioni.map(item => parseFloat(this.calculateAverage(item.temps)));
+      },
+      updatePrecipitationChartAndTable() {
+        this.precChartOptions.xaxis.categories = this.regioni.map(item => item.regione);
+        this.precChartSeries[0].data = this.regioni.map(item => parseFloat(this.calculateAverage(item.precips)));
       }
     }
   };
