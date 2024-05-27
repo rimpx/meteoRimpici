@@ -151,7 +151,7 @@ export default {
       this.chartOptions.xaxis.categories = dataWithMaxTemps.map(d => d.Comune);
     },
     adjustChartSize() {
-      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px';
+      this.chartHeight = window.innerWidth > 1200 ? '600px' : (window.innerWidth > 600 ? '400px' : '300px');
     }
   }
 }
@@ -161,20 +161,6 @@ export default {
 .container {
   max-width: 100%;
   padding: 20px;
-}
-
-.select-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.select-container label {
-  margin-right: 10px;
-}
-
-.select-container select {
-  margin-right: 10px;
 }
 
 #chart {
@@ -203,18 +189,14 @@ th {
 }
 
 @media (max-width: 600px) {
-  #chart {
-    height: 300px;
-  }
-  th, td {
-    padding: 4px;
-  }
   h1 {
     font-size: 24px;
   }
   h2 {
     font-size: 20px;
   }
+  th, td {
+    padding: 4px;
+  }
 }
 </style>
-

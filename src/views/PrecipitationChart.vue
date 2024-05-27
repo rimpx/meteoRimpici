@@ -280,7 +280,7 @@ export default {
       this.saveToLocalStorage();
     },
     adjustChartSize() {
-      this.chartHeight = window.innerWidth > 1200 ? '600px' : '400px';
+      this.chartHeight = window.innerWidth > 1200 ? '600px' : (window.innerWidth > 600 ? '400px' : '300px');
     },
     saveToLocalStorage() {
       const dataToStore = {
@@ -313,6 +313,7 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .select-container label {
@@ -389,6 +390,16 @@ th {
   h2 {
     font-size: 20px;
   }
+  .select-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .select-container select {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  table {
+    font-size: 12px;
+  }
 }
 </style>
-

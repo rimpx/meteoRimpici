@@ -183,7 +183,8 @@ export default {
       this.mostraPrecipitazioni(this.regioni);
     },
     calculateAverage(data) {
-      return data.length ?  data.reduce((a, b) => Number(a) + Number(b), 0) / data.length : 0;
+      const avg = data.length ? data.reduce((a, b) => Number(a) + Number(b), 0) / data.length : 0;
+      return avg.toFixed(2);
     },
     mostraTemperatureData(data) {
       if (data.length > 1) {
@@ -228,5 +229,32 @@ th {
 
 h3 {
   margin-top: 20px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  table, th, td {
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  apexchart {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  table, th, td {
+    font-size: 10px;
+    padding: 4px;
+  }
+
+  h1, h3 {
+    font-size: 18px;
+  }
 }
 </style>
